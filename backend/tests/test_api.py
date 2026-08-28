@@ -104,25 +104,40 @@ def test_profile_validation_failure():
     assert response.status_code == 422
 
 
-def test_implemented_jd_and_resume_endpoints_with_remaining_scaffolds():
-    """Verify implemented JD and Resume Parsing endpoints plus remaining scaffolds."""
-    res_jd = client.post(
-        "/api/jd/analyze",
-        json={
-            "raw_text": "Software Engineer\nBuild scalable backend services with Python and SQL."
-        },
-    )
+def test_jd_analyze_endpoint():
+    """Verify POST /api/jd/analyze is implemented and returns extracted role info."""
+    res_jd = client.post("/api/jd/analyze", json={"raw_text": "Software Engineer"})
     assert res_jd.status_code == 200
     assert res_jd.json()["role"]["job_title"] == "Software Engineer"
 
+
+def test_jd_rejects_malformed_input():
+    """Verify POST /api/jd/analyze rejects malformed input with HTTP 422."""
+    response = client.post("/api/jd/analyze", json={"raw_text": 12345})
+    assert response.status_code == 422
+
+
+def test_resume_parse_endpoint():
+    """Verify Resume Parsing remains implemented on this branch."""
     res_resume = client.post("/api/resume/parse", json={"raw_text": "Sample Resume text"})
     assert res_resume.status_code == 200
     assert res_resume.json()["candidate"]["full_name"] == "Sample Resume text"
 
+
+def test_skill_match_endpoint():
+    """Verify POST /api/skill-match is implemented and returns HTTP 200."""
+    res_match = client.post("/api/skill-match", json={"candidate_id": "c1", "jd_id": "j1"})
+    assert res_match.status_code == 200
+    data = res_match.json()
+    assert data["candidate_id"] == "c1"
+    assert data["jd_id"] == "j1"
+    assert 0 <= data["overall_match_score"] <= 100
+    assert "matched_skills" in data
+    assert "missing_skills" in data
+
+
+def test_scaffolding_endpoints():
+    """Verify genuinely deferred module endpoints return HTTP 501 Not Implemented."""
     res_talent = client.post("/api/talent-check", json={"candidate_id": "c1", "company_id": 1})
     assert res_talent.status_code == 501
     assert "not yet implemented" in res_talent.json()["detail"]
-
-    res_match = client.post("/api/skill-match", json={"candidate_id": "c1", "jd_id": "j1"})
-    assert res_match.status_code == 501
-    assert "not yet implemented" in res_match.json()["detail"]
