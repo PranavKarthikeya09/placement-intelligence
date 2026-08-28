@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from app.models.jd import JDAnalyzeRequest, JDAnalysisResult
+from app.services.jd_analyzer import analyze_text
 
 router = APIRouter(prefix="/api/jd", tags=["JD Analytics"])
 
@@ -7,15 +8,8 @@ router = APIRouter(prefix="/api/jd", tags=["JD Analytics"])
 @router.post(
     "/analyze",
     response_model=JDAnalysisResult,
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
-    summary="Analyze Job Description (Scaffolding)",
+    status_code=status.HTTP_200_OK,
+    summary="Analyze Job Description",
 )
 async def analyze_jd(payload: JDAnalyzeRequest):
-    """
-    Scaffolding endpoint for JD Analytics module.
-    Implementation deferred to Module implementation step.
-    """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="JD Analytics module is not yet implemented. Scaffolding established.",
-    )
+    return analyze_text(payload)
