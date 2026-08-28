@@ -104,12 +104,33 @@ def test_profile_validation_failure():
     assert response.status_code == 422
 
 
-def test_scaffolding_endpoints():
-    """Verify all deferred module endpoints return HTTP 501 Not Implemented"""
+def test_jd_analyze_endpoint():
+    """Verify POST /api/jd/analyze is implemented and returns HTTP 200 with extracted role info"""
     res_jd = client.post("/api/jd/analyze", json={"raw_text": "Software Engineer"})
     assert res_jd.status_code == 200
     assert res_jd.json()["role"]["job_title"] == "Software Engineer"
 
+
+def test_jd_rejects_malformed_input():
+    """Verify POST /api/jd/analyze rejects malformed input with HTTP 422"""
+    response = client.post("/api/jd/analyze", json={"raw_text": 12345})
+    assert response.status_code == 422
+
+
+def test_skill_match_endpoint():
+    """Verify POST /api/skill-match is implemented and returns HTTP 200"""
+    res_match = client.post("/api/skill-match", json={"candidate_id": "cand_001", "jd_id": "jd_001"})
+    assert res_match.status_code == 200
+    data = res_match.json()
+    assert data["candidate_id"] == "cand_001"
+    assert data["jd_id"] == "jd_001"
+    assert 0 <= data["overall_match_score"] <= 100
+    assert "matched_skills" in data
+    assert "missing_skills" in data
+
+
+def test_scaffolding_endpoints():
+    """Verify genuinely deferred module endpoints return HTTP 501 Not Implemented"""
     res_resume = client.post("/api/resume/parse", json={"raw_text": "Sample Resume text"})
     assert res_resume.status_code == 501
     assert "not yet implemented" in res_resume.json()["detail"]
@@ -117,13 +138,3 @@ def test_scaffolding_endpoints():
     res_talent = client.post("/api/talent-check", json={"candidate_id": "c1", "company_id": 1})
     assert res_talent.status_code == 501
     assert "not yet implemented" in res_talent.json()["detail"]
-
-    res_match = client.post("/api/skill-match", json={"candidate_id": "c1", "jd_id": "j1"})
-    assert res_match.status_code == 501
-    assert "not yet implemented" in res_match.json()["detail"]
-
-
-def test_jd_rejects_malformed_input():
-    response = client.post("/api/jd/analyze", json={"raw_text": 12345})
-
-    assert response.status_code == 422

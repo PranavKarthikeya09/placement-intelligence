@@ -53,7 +53,8 @@ The API will be available at:
 | `POST` | `/api/jd/analyze` | Job Description skill extraction | Scaffolding (`501 Not Implemented`) |
 | `POST` | `/api/resume/parse` | Resume entity & skill extraction | Scaffolding (`501 Not Implemented`) |
 | `POST` | `/api/talent-check` | Candidate-vs-Company benchmark gap analysis | Scaffolding (`501 Not Implemented`) |
-| `POST` | `/api/skill-match` | Candidate-vs-JD match scoring | Scaffolding (`501 Not Implemented`) |
+| `POST` | `/api/skill-match` | Candidate-vs-JD match scoring & gap analysis | Implemented (`200 OK`) |
+
 
 ---
 
