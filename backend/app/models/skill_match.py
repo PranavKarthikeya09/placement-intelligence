@@ -1,7 +1,9 @@
 from enum import Enum
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from app.models.skill import Skill, SkillCategoryCode
+from app.models.candidate import CandidateProfile
+from app.models.jd import JDAnalysisResult
 
 
 class MatchConfidence(str, Enum):
@@ -20,7 +22,7 @@ class MatchedSkillDetail(BaseModel):
     jd_skill: Skill
     candidate_skill: Skill
     match_confidence: MatchConfidence
-    score_contribution: float
+    score_contribution: float = Field(..., description="Score contribution weighting for this match")
 
 
 class MissingSkillDetail(BaseModel):
@@ -31,9 +33,21 @@ class MissingSkillDetail(BaseModel):
 
 
 class SkillMatchRequest(BaseModel):
-    candidate_id: str
-    jd_id: str
-    minimum_match_threshold: Optional[float] = Field(None, ge=0, le=100)
+    candidate_id: Optional[str] = Field(None, description="Identifier of candidate profile")
+    jd_id: Optional[str] = Field(None, description="Identifier of job description")
+    candidate_profile: Optional[CandidateProfile] = Field(None, description="Embedded candidate profile")
+    candidate: Optional[CandidateProfile] = Field(None, description="Alias for candidate_profile")
+    jd: Optional[JDAnalysisResult] = Field(None, description="Embedded JD analysis result")
+    minimum_match_threshold: Optional[float] = Field(None, ge=0, le=100, description="Optional minimum match threshold percentage (0-100)")
+
+    @model_validator(mode="after")
+    def validate_inputs(self) -> "SkillMatchRequest":
+        effective_candidate = self.candidate_profile or self.candidate
+        if not effective_candidate and not self.candidate_id:
+            raise ValueError("Either candidate_id or candidate_profile must be provided.")
+        if not self.jd and not self.jd_id:
+            raise ValueError("Either jd_id or jd must be provided.")
+        return self
 
 
 class SkillMatchResponse(BaseModel):
@@ -41,7 +55,7 @@ class SkillMatchResponse(BaseModel):
     jd_id: str
     job_title: str
     company_name: str
-    overall_match_score: float = Field(..., ge=0, le=100)
+    overall_match_score: float = Field(..., ge=0, le=100, description="Overall match score percentage (0-100)")
     matched_skills: List[MatchedSkillDetail] = Field(default_factory=list)
     missing_skills: List[MissingSkillDetail] = Field(default_factory=list)
     matched_count: int

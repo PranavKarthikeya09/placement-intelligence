@@ -105,7 +105,7 @@ def test_profile_validation_failure():
 
 
 def test_scaffolding_endpoints():
-    """Verify all deferred module endpoints return HTTP 501 Not Implemented"""
+    """Verify deferred module endpoints return HTTP 501 Not Implemented"""
     res_jd = client.post("/api/jd/analyze", json={"raw_text": "Sample JD text"})
     assert res_jd.status_code == 501
     assert "not yet implemented" in res_jd.json()["detail"]
@@ -118,6 +118,15 @@ def test_scaffolding_endpoints():
     assert res_talent.status_code == 501
     assert "not yet implemented" in res_talent.json()["detail"]
 
-    res_match = client.post("/api/skill-match", json={"candidate_id": "c1", "jd_id": "j1"})
-    assert res_match.status_code == 501
-    assert "not yet implemented" in res_match.json()["detail"]
+
+def test_skill_match_endpoint():
+    """Verify POST /api/skill-match is implemented and returns HTTP 200"""
+    res_match = client.post("/api/skill-match", json={"candidate_id": "cand_001", "jd_id": "jd_001"})
+    assert res_match.status_code == 200
+    data = res_match.json()
+    assert data["candidate_id"] == "cand_001"
+    assert data["jd_id"] == "jd_001"
+    assert 0 <= data["overall_match_score"] <= 100
+    assert "matched_skills" in data
+    assert "missing_skills" in data
+
