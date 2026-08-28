@@ -106,9 +106,9 @@ def test_profile_validation_failure():
 
 def test_scaffolding_endpoints():
     """Verify all deferred module endpoints return HTTP 501 Not Implemented"""
-    res_jd = client.post("/api/jd/analyze", json={"raw_text": "Sample JD text"})
-    assert res_jd.status_code == 501
-    assert "not yet implemented" in res_jd.json()["detail"]
+    res_jd = client.post("/api/jd/analyze", json={"raw_text": "Software Engineer"})
+    assert res_jd.status_code == 200
+    assert res_jd.json()["role"]["job_title"] == "Software Engineer"
 
     res_resume = client.post("/api/resume/parse", json={"raw_text": "Sample Resume text"})
     assert res_resume.status_code == 501
@@ -121,3 +121,9 @@ def test_scaffolding_endpoints():
     res_match = client.post("/api/skill-match", json={"candidate_id": "c1", "jd_id": "j1"})
     assert res_match.status_code == 501
     assert "not yet implemented" in res_match.json()["detail"]
+
+
+def test_jd_rejects_malformed_input():
+    response = client.post("/api/jd/analyze", json={"raw_text": 12345})
+
+    assert response.status_code == 422
