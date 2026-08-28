@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from app.models.talent_check import TalentCheckRequest, TalentCheckResponse
+from app.services.talent_check import evaluate_talent_check_request
 
 router = APIRouter(prefix="/api/talent-check", tags=["Talent Check"])
 
@@ -7,15 +8,12 @@ router = APIRouter(prefix="/api/talent-check", tags=["Talent Check"])
 @router.post(
     "",
     response_model=TalentCheckResponse,
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
-    summary="Evaluate Candidate against Company Placement Benchmark (Scaffolding)",
+    status_code=status.HTTP_200_OK,
+    summary="Evaluate Candidate against Company Placement Benchmark",
 )
-async def evaluate_talent_check(payload: TalentCheckRequest):
+async def evaluate_talent_check(payload: TalentCheckRequest) -> TalentCheckResponse:
     """
-    Scaffolding endpoint for Talent Check module.
-    Implementation deferred to Module implementation step.
+    Evaluates a candidate profile / assessments against company placement expectations.
+    Calculates itemized skill gaps, category aggregations, readiness score, and priority gaps.
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Talent Check module scoring is not yet implemented. Scaffolding established.",
-    )
+    return evaluate_talent_check_request(payload)

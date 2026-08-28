@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sparkles,
@@ -7,6 +7,13 @@ import {
   TrendingUp,
   AlertCircle,
   RefreshCw,
+  UserCheck,
+  Target,
+  CheckCircle2,
+  AlertTriangle,
+  Building2,
+  RotateCcw,
+  Layers,
 } from "lucide-react";
 import { useCompany } from "@/context/CompanyContext";
 import { CompanyLogo } from "@/components/CompanyLogo";
@@ -15,6 +22,16 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkillGapSimulatorItem } from "@/components/SkillGapSimulator";
 import { CountUp } from "@/components/motion/CountUp";
+import {
+  loadCandidateProfile,
+  getStoredAssessments,
+  saveStoredAssessments,
+} from "@/data/mockCandidateProfile";
+import {
+  evaluateTalentCheck,
+  mapSkillNameToCategoryCode,
+} from "@/lib/talentCheck";
+import { SkillCategoryCode, SKILL_CATEGORY_NAMES } from "@/shared/types";
 import { cn } from "@/lib/utils";
 
 const BLOOM_DETAILS = [
@@ -81,14 +98,34 @@ const CRITICALITY_DETAILS = [
 
 export const SkillIntelligence: React.FC = () => {
   const {
+    selectedCompany,
     companySummary,
     skills,
     skillTopicsBySkillName,
+    allCompaniesSummary,
+    setSelectedCompanyById,
     isSkillsLoading,
     skillsError,
     refetchSkills,
   } = useCompany();
   const navigate = useNavigate();
+
+  // Load active Candidate Profile
+  const candidateProfile = useMemo(() => loadCandidateProfile(), []);
+
+  // Candidate Self-Assessments per skill state
+  const activeCompanyId = companySummary?.id || selectedCompany?.companyId || "1";
+  const [assessments, setAssessments] = useState<Record<string, number>>(() => {
+    return getStoredAssessments(activeCompanyId);
+  });
+
+  // Category filter state
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+
+  // Reload stored assessments when company changes
+  useEffect(() => {
+    setAssessments(getStoredAssessments(activeCompanyId));
+  }, [activeCompanyId]);
 
   // Guard against missing company
   useEffect(() => {
@@ -97,14 +134,65 @@ export const SkillIntelligence: React.FC = () => {
     }
   }, [companySummary, isSkillsLoading, navigate]);
 
-  // Derive dynamic metrics for Skill Profile Overview
-  const skillProfileStats = useMemo(() => {
-    const total = skills.length;
-    const critical = skills.filter((s) => s.criticality === "Critical").length;
-    const important = skills.filter((s) => s.criticality === "Important").length;
-    const baseline = skills.filter((s) => s.criticality === "Baseline").length;
+  // Handle skill level change
+  const handleLevelChange = useCallback(
+    (skillName: string, newLevel: number) => {
+      setAssessments((prev) => {
+        const next = { ...prev, [skillName]: newLevel };
+        saveStoredAssessments(activeCompanyId, next);
+        return next;
+      });
+    },
+    [activeCompanyId]
+  );
 
-    return { total, critical, important, baseline };
+  // Reset assessments to candidate profile defaults
+  const handleResetAssessments = useCallback(() => {
+    const fresh: Record<string, number> = {};
+    for (const skill of skills) {
+      const catCode = mapSkillNameToCategoryCode(skill.name);
+      const matched = candidateProfile.skills.find(
+        (s) => s.skill_name.toLowerCase() === skill.name.toLowerCase() || s.category_code === catCode
+      );
+      fresh[skill.name] = matched?.level || Math.max(1, skill.score - 2);
+    }
+    setAssessments(fresh);
+    saveStoredAssessments(activeCompanyId, fresh);
+  }, [skills, candidateProfile, activeCompanyId]);
+
+  // Evaluate deterministic Talent Check report
+  const numericCompanyId = parseInt(activeCompanyId, 10) || 1;
+  const talentCheckResult = useMemo(() => {
+    return evaluateTalentCheck(
+      candidateProfile,
+      numericCompanyId,
+      companySummary?.name || "Target Company",
+      skills,
+      assessments
+    );
+  }, [candidateProfile, numericCompanyId, companySummary?.name, skills, assessments]);
+
+  // Derived counts
+  const totalSkillsCount = skills.length;
+  const metSkillsCount = useMemo(() => {
+    return skills.filter((s) => {
+      const candLvl = assessments[s.name] ?? Math.max(1, s.score - 2);
+      return candLvl >= s.score;
+    }).length;
+  }, [skills, assessments]);
+  const gapSkillsCount = totalSkillsCount - metSkillsCount;
+
+  // Filter skills by selected RADIX category
+  const filteredSkills = useMemo(() => {
+    if (selectedCategory === "ALL") return skills;
+    return skills.filter((s) => mapSkillNameToCategoryCode(s.name) === selectedCategory);
+  }, [skills, selectedCategory]);
+
+  // Distinct category codes present in current company skills
+  const availableCategories = useMemo(() => {
+    const set = new Set<SkillCategoryCode>();
+    skills.forEach((s) => set.add(mapSkillNameToCategoryCode(s.name)));
+    return Array.from(set);
   }, [skills]);
 
   if (skillsError) {
@@ -114,7 +202,7 @@ export const SkillIntelligence: React.FC = () => {
           <AlertCircle className="h-8 w-8" />
         </div>
         <h2 className="text-xl font-bold text-foreground font-heading">
-          Unable to load skill intelligence
+          Unable to load talent check intelligence
         </h2>
         <p className="text-sm text-muted-foreground max-w-md mx-auto font-medium">
           We encountered an issue retrieving placement skill benchmarks from Supabase.
@@ -149,11 +237,15 @@ export const SkillIntelligence: React.FC = () => {
     return null;
   }
 
+  const readinessScore = talentCheckResult.overall_readiness_score;
+  const readinessTier = talentCheckResult.readiness_tier;
+
   return (
     <div className="min-h-full pb-20 bg-background">
-      {/* Skill Intelligence Hero Header */}
+      {/* Talent Check Hero Header */}
       <div className="bg-card border-b-[3px] border-foreground py-8 px-4 sm:px-6 nb-shadow-sm">
         <div className="max-w-7xl mx-auto space-y-6">
+          {/* Top Row: Company Info + Quick Switcher + Candidate Context */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <CompanyLogo
@@ -166,83 +258,200 @@ export const SkillIntelligence: React.FC = () => {
                 className="shrink-0"
               />
               <div>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-xs font-bold font-mono text-[#4169E1] uppercase tracking-wider">
-                    {companySummary.name} · SKILL ROADMAP
+                    RADIX MODULE 04 · TALENT CHECK
                   </span>
                   <span className="text-[10px] font-mono font-bold bg-secondary px-2 py-0.5 rounded-sm border-2 border-foreground text-foreground">
-                    {skills.length} REQUIRED SKILLS
+                    {companySummary.name.toUpperCase()} BENCHMARK
                   </span>
                 </div>
                 <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground leading-tight">
                   YOUR PATH TO THE COMPANY
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-2xl font-medium">
-                  Understand what this company expects and map the path toward the required proficiency.
+                  Compare your structured candidate profile against {companySummary.name}'s competency expectations to calculate gaps, readiness score, and targeted progression milestones.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold bg-secondary text-foreground border-2 border-foreground px-3 py-1 rounded-sm nb-shadow-sm">
-                SELF-ASSESSMENT CALIBRATION
-              </span>
+            {/* Candidate Context Badge & Company Switcher */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
+              {/* Active Candidate Badge */}
+              <div className="flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-sm border-2 border-foreground nb-shadow-sm">
+                <UserCheck className="h-4 w-4 text-[#4169E1]" />
+                <div className="text-left font-mono">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase leading-none">
+                    CANDIDATE PROFILE
+                  </div>
+                  <div className="text-xs font-bold text-foreground leading-tight">
+                    {candidateProfile.name} (SVCE)
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Company Switcher Dropdown */}
+              {allCompaniesSummary.length > 0 && (
+                <div className="flex items-center gap-1.5 bg-card px-2.5 py-1 rounded-sm border-2 border-foreground nb-shadow-sm">
+                  <Building2 className="h-4 w-4 text-foreground shrink-0" />
+                  <label htmlFor="talent-check-company-switcher" className="sr-only">Select Company</label>
+                  <select
+                    id="talent-check-company-switcher"
+                    aria-label="Select Target Company for Talent Check"
+                    value={activeCompanyId}
+                    onChange={(e) => setSelectedCompanyById(e.target.value)}
+                    className="text-xs font-mono font-bold bg-transparent text-foreground focus:outline-none cursor-pointer pr-1"
+                  >
+                    {allCompaniesSummary.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-card text-foreground">
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Compact Overview Strip: SKILL PROFILE */}
-          <div className="rounded-sm border-2 border-foreground bg-secondary p-4 nb-shadow-md">
-            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground mb-2.5">
-              SKILL PROFILE OVERVIEW
+          {/* Overall Readiness & Talent Check KPI Dashboard Strip */}
+          <div className="rounded-sm border-2 border-foreground bg-secondary p-5 nb-shadow-md space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-foreground pb-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-foreground" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-foreground">
+                  SKILL PROFILE OVERVIEW · TALENT CHECK READINESS ASSESSMENT
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono font-bold text-muted-foreground">
+                  EVALUATION TIER:
+                </span>
+                <span
+                  className={cn(
+                    "text-xs font-mono font-extrabold px-2.5 py-0.5 rounded-sm border-2 border-foreground",
+                    readinessTier === "Ready"
+                      ? "bg-primary text-primary-foreground"
+                      : readinessTier === "Needs Preparation"
+                      ? "bg-[#4169E1] text-white"
+                      : "bg-[#FF7657] text-foreground"
+                  )}
+                >
+                  {readinessTier.toUpperCase()}
+                </span>
+              </div>
             </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {/* KPI 1: Overall Readiness Score */}
               <div className="space-y-0.5">
-                <div className="font-mono font-extrabold text-2xl sm:text-3xl text-foreground">
-                  <CountUp to={skillProfileStats.total} duration={0.7} />
+                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-foreground flex items-baseline gap-1">
+                  <CountUp to={readinessScore} duration={0.6} />
+                  <span className="text-lg font-bold">%</span>
                 </div>
                 <div className="text-xs text-muted-foreground font-bold">
-                  Required Skills
+                  Overall Candidate Readiness
                 </div>
               </div>
 
+              {/* KPI 2: Total Required Skills */}
               <div className="space-y-0.5 border-l-2 border-foreground pl-4">
-                <div className="font-mono font-extrabold text-2xl sm:text-3xl text-destructive">
-                  <CountUp to={skillProfileStats.critical} duration={0.7} />
+                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-foreground">
+                  <CountUp to={totalSkillsCount} duration={0.6} />
                 </div>
                 <div className="text-xs text-muted-foreground font-bold">
-                  Critical Priority
+                  Target Competencies
                 </div>
               </div>
 
+              {/* KPI 3: Target Met Competencies */}
               <div className="space-y-0.5 border-l-2 border-foreground pl-4">
-                <div className="font-mono font-extrabold text-2xl sm:text-3xl text-[#4169E1]">
-                  <CountUp to={skillProfileStats.important} duration={0.7} />
+                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-primary flex items-center gap-1.5">
+                  <CountUp to={metSkillsCount} duration={0.6} />
+                  <CheckCircle2 className="h-5 w-5 text-foreground hidden sm:inline" />
                 </div>
                 <div className="text-xs text-muted-foreground font-bold">
-                  Important Priority
+                  Competencies Met (Gap = 0)
                 </div>
               </div>
 
+              {/* KPI 4: Priority Gaps */}
               <div className="space-y-0.5 border-l-2 border-foreground pl-4">
-                <div className="font-mono font-extrabold text-2xl sm:text-3xl text-foreground">
-                  <CountUp to={skillProfileStats.baseline} duration={0.7} />
+                <div className="font-mono font-extrabold text-3xl sm:text-4xl text-[#FF7657] flex items-center gap-1.5">
+                  <CountUp to={gapSkillsCount} duration={0.6} />
+                  {gapSkillsCount > 0 && <AlertTriangle className="h-5 w-5 text-[#FF7657] hidden sm:inline" />}
                 </div>
                 <div className="text-xs text-muted-foreground font-bold">
-                  Baseline Priority
+                  Gaps Requiring Progression
                 </div>
+              </div>
+            </div>
+
+            {/* Visual Readiness Progress Bar */}
+            <div className="space-y-1 pt-1 font-mono">
+              <div className="flex justify-between text-[11px] font-bold text-muted-foreground">
+                <span>BENCHMARK READINESS: <strong className="text-foreground">{readinessScore}%</strong></span>
+                <span>THRESHOLD: <strong className="text-[#4169E1]">80% FOR PLACEMENT CLEARANCE</strong></span>
+              </div>
+              <div className="relative h-3 w-full bg-card rounded-none overflow-hidden border-2 border-foreground">
+                <div
+                  className="absolute top-0 bottom-0 left-0 transition-all duration-300 bg-primary"
+                  style={{ width: `${readinessScore}%` }}
+                />
+                {/* 80% Benchmark Marker */}
+                <div
+                  className="absolute top-0 bottom-0 w-1 bg-[#4169E1] z-10"
+                  style={{ left: "80%" }}
+                  title="Placement Readiness Threshold (80%)"
+                />
               </div>
             </div>
           </div>
 
-          {/* Contextual Box: "Why these skills?" */}
+          {/* Priority Development Areas Banner */}
+          {talentCheckResult.priority_gaps.length > 0 && (
+            <div className="rounded-sm border-2 border-foreground bg-card p-4 space-y-3 nb-shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-foreground pb-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-foreground font-mono">
+                  <Sparkles className="h-4 w-4 text-[#4169E1]" />
+                  <span>PRIORITY DEVELOPMENT AREAS (TOP COMPETENCY GAPS):</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleResetAssessments}
+                  className="h-7 text-[11px] font-mono font-bold gap-1.5"
+                  title="Reset self-assessments to candidate profile defaults"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>Reset Assessments</span>
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {talentCheckResult.priority_gaps.map((desc, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-sm border-2 border-foreground bg-secondary p-3 flex items-start gap-2.5 text-xs text-foreground"
+                  >
+                    <span className="font-mono font-extrabold text-foreground bg-[#FF7657] shrink-0 h-5 w-5 rounded-sm border border-foreground flex items-center justify-center text-[11px]">
+                      #{idx + 1}
+                    </span>
+                    <span className="font-bold leading-snug">{desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Explanatory Box: "How Talent Check works" */}
           <div className="rounded-sm border-2 border-foreground bg-card p-4 flex items-start gap-3 text-xs text-foreground nb-shadow-sm">
             <HelpCircle className="h-4 w-4 text-[#4169E1] shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <span className="font-bold text-foreground font-mono uppercase text-[11px] block">
-                WHY THESE SKILLS?
+                HOW TALENT CHECK WORKS
               </span>
               <p className="leading-relaxed text-muted-foreground font-medium">
-                The displayed requirements reflect {companySummary.name}'s configured skill profile in the portal dataset. Use the interactive gap simulator below to assess your current readiness and identify high-priority topic milestones to close any gaps.
+                Talent Check compares candidate proficiencies with {companySummary.name}'s benchmark expectation levels (1–10). Gaps are evaluated as <code className="font-mono bg-secondary px-1 py-0.5 border border-foreground text-foreground">max(0, target - candidate)</code>. Use the self-assessment buttons below to simulate competency level adjustments in real-time.
               </p>
             </div>
           </div>
@@ -250,6 +459,50 @@ export const SkillIntelligence: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-10">
+        {/* RADIX Categories Filter & Breakdown */}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b-2 border-foreground">
+            <h2 className="font-heading text-base font-bold text-foreground flex items-center gap-2">
+              <Layers className="h-4 w-4 text-foreground" />
+              <span>RADIX Competency Categories Filter</span>
+            </h2>
+            <span className="text-[11px] text-muted-foreground font-mono font-bold">
+              {filteredSkills.length} of {skills.length} Competencies Displayed
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setSelectedCategory("ALL")}
+              className={cn(
+                "px-3 py-1 text-xs font-mono font-bold rounded-sm border-2 transition-all",
+                selectedCategory === "ALL"
+                  ? "bg-primary text-primary-foreground border-foreground nb-shadow-sm"
+                  : "bg-card text-foreground border-foreground hover:bg-secondary"
+              )}
+            >
+              ALL ({skills.length})
+            </button>
+            {availableCategories.map((code) => {
+              const count = skills.filter((s) => mapSkillNameToCategoryCode(s.name) === code).length;
+              return (
+                <button
+                  key={code}
+                  onClick={() => setSelectedCategory(code)}
+                  className={cn(
+                    "px-3 py-1 text-xs font-mono font-bold rounded-sm border-2 transition-all",
+                    selectedCategory === code
+                      ? "bg-primary text-primary-foreground border-foreground nb-shadow-sm"
+                      : "bg-card text-foreground border-foreground hover:bg-secondary"
+                  )}
+                >
+                  {code} · {SKILL_CATEGORY_NAMES[code]} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Bloom's Taxonomy Scale Reference */}
         <div className="space-y-3">
           <div className="flex items-center justify-between pb-2 border-b-2 border-foreground">
@@ -324,16 +577,16 @@ export const SkillIntelligence: React.FC = () => {
           </div>
         </div>
 
-        {/* Interactive Skill Gap Simulator & 12 Skill Breakdown */}
+        {/* Interactive Skill Gap Simulator & 10-Level Roadmaps */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-foreground pb-2">
             <div>
               <h2 className="font-heading text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
-                <span>SKILL GAP SIMULATOR ({skills.length} SKILLS)</span>
+                <span>SKILL GAP SIMULATOR ({filteredSkills.length} COMPETENCIES)</span>
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-                Interact with the self-assessment controls below to calculate your level gap and view dynamic topic recommendations
+                Adjust candidate levels below. The overall readiness score, priority gaps, and 10-level roadmaps update instantly.
               </p>
             </div>
             <span className="text-[11px] text-muted-foreground font-mono font-bold">
@@ -349,15 +602,19 @@ export const SkillIntelligence: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {skills.map((skill, index) => (
-                <SkillGapSimulatorItem
-                  key={skill.id || index}
-                  skill={skill}
-                  index={index}
-                  topics={skillTopicsBySkillName[skill.name]}
-                  initialCurrentLevel={Math.max(1, skill.score - 2)}
-                />
-              ))}
+              {filteredSkills.map((skill, index) => {
+                const candLvl = assessments[skill.name] ?? Math.max(1, skill.score - 2);
+                return (
+                  <SkillGapSimulatorItem
+                    key={skill.id || index}
+                    skill={skill}
+                    index={index}
+                    topics={skillTopicsBySkillName[skill.name]}
+                    candidateLevel={candLvl}
+                    onLevelChange={(lvl) => handleLevelChange(skill.name, lvl)}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

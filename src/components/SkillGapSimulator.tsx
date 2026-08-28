@@ -12,6 +12,7 @@ import { getRoadmapForSkill, SkillRoadmapLevel } from "@/data/skillTopics";
 import { SkillProgressionRoadmap } from "@/components/SkillProgressionRoadmap";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { mapSkillNameToCategoryCode } from "@/lib/talentCheck";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
@@ -20,17 +21,36 @@ interface SkillGapSimulatorItemProps {
   index: number;
   topics?: SkillRoadmapLevel[];
   initialCurrentLevel?: number;
+  candidateLevel?: number;
+  onLevelChange?: (newLevel: number) => void;
 }
 
 export const SkillGapSimulatorItem: React.FC<SkillGapSimulatorItemProps> = React.memo(
-  ({ skill, index, topics, initialCurrentLevel = 4 }) => {
+  ({
+    skill,
+    index,
+    topics,
+    initialCurrentLevel = 4,
+    candidateLevel: controlledLevel,
+    onLevelChange,
+  }) => {
     const shouldReduce = useReducedMotion();
 
-    // Interactive UI-only self-assessed state (1 - 10)
-    const [currentLevel, setCurrentLevel] = useState<number>(() => {
-      return Math.max(1, Math.min(skill.score, initialCurrentLevel));
+    // Support both controlled and uncontrolled state
+    const [localLevel, setLocalLevel] = useState<number>(() => {
+      return Math.max(1, Math.min(10, controlledLevel ?? initialCurrentLevel));
     });
     const [isExpanded, setIsExpanded] = useState<boolean>(index < 2);
+
+    const currentLevel = controlledLevel !== undefined ? controlledLevel : localLevel;
+
+    const handleLevelSelect = (lvl: number) => {
+      const clamped = Math.max(1, Math.min(10, lvl));
+      setLocalLevel(clamped);
+      if (onLevelChange) {
+        onLevelChange(clamped);
+      }
+    };
 
     const roadmapLevels = useMemo(() => {
       if (topics && topics.length > 0) {
@@ -39,9 +59,10 @@ export const SkillGapSimulatorItem: React.FC<SkillGapSimulatorItemProps> = React
       return getRoadmapForSkill(skill.name);
     }, [topics, skill.name]);
 
-    // Calculate gap
+    // Calculate gap: gap = max(0, targetLevel - currentLevel). Never negative!
     const targetLevel = skill.score;
     const gap = Math.max(0, targetLevel - currentLevel);
+    const categoryCode = mapSkillNameToCategoryCode(skill.name);
 
     // Filter recommended next steps (levels between currentLevel and targetLevel)
     const recommendedNext = useMemo(() => {
@@ -69,6 +90,9 @@ export const SkillGapSimulatorItem: React.FC<SkillGapSimulatorItemProps> = React
                   <CardTitle className="text-base font-bold text-foreground font-heading">
                     {skill.name}
                   </CardTitle>
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-sm bg-card border border-foreground text-foreground">
+                    {categoryCode}
+                  </span>
                   <Badge
                     variant={skill.bloom.toLowerCase() as any}
                     className="text-[10px] font-bold px-2 py-0.5"
@@ -119,7 +143,9 @@ export const SkillGapSimulatorItem: React.FC<SkillGapSimulatorItemProps> = React
                 <div className="flex items-center gap-1.5 text-xs font-bold text-foreground font-mono">
                   <Sliders className="h-3.5 w-3.5 text-[#4169E1]" />
                   <span>SELF-ASSESSMENT:</span>
-                  <span className="text-foreground bg-primary px-1.5 py-0.5 rounded-sm border border-foreground font-bold">Level {currentLevel}</span>
+                  <span className="text-foreground bg-primary px-1.5 py-0.5 rounded-sm border border-foreground font-bold">
+                    Level {currentLevel}
+                  </span>
                 </div>
                 <span className="text-[11px] text-muted-foreground font-mono font-bold">
                   Select your estimated proficiency
@@ -137,7 +163,7 @@ export const SkillGapSimulatorItem: React.FC<SkillGapSimulatorItemProps> = React
                     <button
                       key={lvlNum}
                       type="button"
-                      onClick={() => setCurrentLevel(lvlNum)}
+                      onClick={() => handleLevelSelect(lvlNum)}
                       className={cn(
                         "h-8 rounded-sm text-xs font-mono font-bold transition-all duration-100 relative flex items-center justify-center border-2",
                         isSelected
@@ -146,7 +172,7 @@ export const SkillGapSimulatorItem: React.FC<SkillGapSimulatorItemProps> = React
                           ? "bg-secondary text-foreground border-foreground hover:bg-primary/30"
                           : "bg-card text-muted-foreground border-foreground/40 hover:border-foreground hover:text-foreground"
                       )}
-                      title={`Set current level to ${lvlNum}`}
+                      title={`Set candidate self-assessment to Level ${lvlNum}`}
                     >
                       <span>{lvlNum}</span>
                       {isTarget && (
