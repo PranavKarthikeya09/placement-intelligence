@@ -9,6 +9,11 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  FileCode2,
+  User,
+  GitCompare,
+  Building,
+  Sparkles,
 } from "lucide-react";
 import { useCompany } from "@/context/CompanyContext";
 import { CompanyLogo } from "@/components/CompanyLogo";
@@ -24,27 +29,82 @@ export const AppLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const isSkills = location.pathname.includes("/company/skills");
-  const isIntelligence = location.pathname.includes("/company/intelligence");
+  const pathname = location.pathname;
+  const isSkills = pathname.includes("/company/skills") || pathname.includes("/radix/talent-check");
+  const isIntelligence = pathname.includes("/company/intelligence");
+  const isJd = pathname.includes("/radix/jd-analytics");
+  const isResume = pathname.includes("/radix/resume-parsing");
+  const isProfile = pathname.includes("/radix/profile-builder");
+  const isMatch = pathname.includes("/radix/skill-matching");
 
-  const navItems = [
+  const radixNavItems = [
+    {
+      num: "01",
+      title: "JD Analytics",
+      href: "/radix/jd-analytics",
+      icon: FileCode2,
+      active: isJd,
+      badge: "NLP Extract",
+    },
+    {
+      num: "02",
+      title: "Resume Parsing",
+      href: "/radix/resume-parsing",
+      icon: FileText,
+      active: isResume,
+      badge: "CV Parser",
+    },
+    {
+      num: "03",
+      title: "Profile Builder",
+      href: "/radix/profile-builder",
+      icon: User,
+      active: isProfile,
+      badge: "Candidate",
+    },
+    {
+      num: "04",
+      title: "Talent Check",
+      href: "/company/skills",
+      icon: GraduationCap,
+      active: isSkills,
+      badge: "Readiness",
+    },
+    {
+      num: "05",
+      title: "Skill Matching",
+      href: "/radix/skill-matching",
+      icon: GitCompare,
+      active: isMatch,
+      badge: "Fit Score",
+    },
+  ];
+
+  const intelligenceNavItems = [
     {
       num: "01",
       title: "Company Intelligence",
       href: "/company/intelligence",
-      icon: FileText,
+      icon: Building,
       active: isIntelligence,
       badge: "22 Sections",
     },
-    {
-      num: "02",
-      title: "Skill Intelligence",
-      href: "/company/skills",
-      icon: GraduationCap,
-      active: isSkills,
-      badge: "12 Skills",
-    },
   ];
+
+  // Dynamic breadcrumb title
+  const currentModuleTitle = isJd
+    ? "JD Analytics"
+    : isResume
+    ? "Resume Parsing"
+    : isProfile
+    ? "Profile Builder"
+    : isSkills
+    ? "Skill Intelligence & Talent Check"
+    : isMatch
+    ? "Skill Matching Engine"
+    : isIntelligence
+    ? "Company Intelligence"
+    : "Portal";
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row text-foreground">
@@ -59,7 +119,7 @@ export const AppLayout: React.FC = () => {
       {/* Neo-Brutalist Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-card border-r-[3px] border-foreground md:static",
+          "fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-card border-r-[3px] border-foreground md:static transition-all duration-200",
           isCollapsed ? "w-16" : "w-64",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
@@ -80,7 +140,7 @@ export const AppLayout: React.FC = () => {
                   SVCE INTELLIGENCE
                 </span>
                 <span className="text-[10px] font-mono text-muted-foreground uppercase">
-                  RESEARCH PORTAL
+                  RADIX MATCH HUB
                 </span>
               </div>
             )}
@@ -112,7 +172,7 @@ export const AppLayout: React.FC = () => {
           </div>
         </div>
 
-        {/* Selected Company Mini Context Panel */}
+        {/* Selected Company Mini Context Panel (when on company context) */}
         {companySummary && (
           <div className="p-3 border-b-2 border-foreground bg-secondary">
             <div className="flex items-center gap-2.5">
@@ -142,40 +202,95 @@ export const AppLayout: React.FC = () => {
         )}
 
         {/* Navigation Items */}
-        <div className="flex-1 py-4 px-2 space-y-2 overflow-y-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-sm text-xs font-bold transition-all duration-100 select-none border-2",
-                    isActive
-                      ? "bg-primary text-primary-foreground border-foreground nb-shadow-sm"
-                      : "text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground hover:border-foreground"
-                  )
-                }
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {!isCollapsed && (
-                  <div className="flex flex-1 items-center justify-between truncate">
-                    <span className="truncate">{item.title}</span>
-                    <span
-                      className={cn(
-                        "text-[10px] font-mono",
-                        item.active ? "text-primary-foreground/80" : "text-muted-foreground"
-                      )}
-                    >
-                      {item.badge}
-                    </span>
-                  </div>
-                )}
-              </NavLink>
-            );
-          })}
+        <div className="flex-1 py-3 px-2 space-y-4 overflow-y-auto">
+          {/* RADIX MODULES GROUP */}
+          <div className="space-y-1">
+            {!isCollapsed && (
+              <div className="px-2 py-1 flex items-center justify-between text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
+                <span>RADIX TALENT MATCH</span>
+                <Sparkles className="h-3 w-3 text-[#4169E1]" />
+              </div>
+            )}
+            {radixNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-sm text-xs font-bold transition-all duration-100 select-none border-2",
+                      isActive || item.active
+                        ? "bg-primary text-primary-foreground border-foreground nb-shadow-sm"
+                        : "text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground hover:border-foreground"
+                    )
+                  }
+                  title={item.title}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && (
+                    <div className="flex flex-1 items-center justify-between truncate">
+                      <span className="truncate">{item.title}</span>
+                      <span
+                        className={cn(
+                          "text-[9px] font-mono",
+                          item.active || location.pathname === item.href
+                            ? "text-primary-foreground/80"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    </div>
+                  )}
+                </NavLink>
+              );
+            })}
+          </div>
+
+          {/* PLACEMENT INTELLIGENCE GROUP */}
+          <div className="space-y-1 pt-2 border-t-2 border-foreground/30">
+            {!isCollapsed && (
+              <div className="px-2 py-1 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
+                <span>PLACEMENT RESEARCH</span>
+              </div>
+            )}
+            {intelligenceNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-sm text-xs font-bold transition-all duration-100 select-none border-2",
+                      isActive || item.active
+                        ? "bg-primary text-primary-foreground border-foreground nb-shadow-sm"
+                        : "text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground hover:border-foreground"
+                    )
+                  }
+                  title={item.title}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && (
+                    <div className="flex flex-1 items-center justify-between truncate">
+                      <span className="truncate">{item.title}</span>
+                      <span
+                        className={cn(
+                          "text-[9px] font-mono",
+                          item.active ? "text-primary-foreground/80" : "text-muted-foreground"
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    </div>
+                  )}
+                </NavLink>
+              );
+            })}
+          </div>
         </div>
 
         {/* Sidebar Footer */}
@@ -218,30 +333,32 @@ export const AppLayout: React.FC = () => {
 
             {/* Breadcrumb Navigation */}
             <nav className="flex items-center gap-1.5 text-xs text-muted-foreground truncate font-mono">
-              <Link
-                to="/"
-                className="hover:text-foreground font-bold hidden sm:inline"
-              >
+              <Link to="/" className="hover:text-foreground font-bold hidden sm:inline">
                 Portal
               </Link>
               <ChevronRight className="h-3 w-3 text-muted-foreground hidden sm:inline shrink-0" />
-              <span className="font-bold text-foreground truncate">
-                {companySummary?.name || "Company"}
-              </span>
-              <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span className="text-primary font-bold truncate">
-                {isSkills ? "Skill Intelligence" : "Company Intelligence"}
-              </span>
+              {companySummary && (
+                <>
+                  <span className="font-bold text-foreground truncate hidden sm:inline">
+                    {companySummary.name}
+                  </span>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground hidden sm:inline shrink-0" />
+                </>
+              )}
+              <span className="text-primary font-bold truncate">{currentModuleTitle}</span>
             </nav>
           </div>
 
           {/* Right Header Metadata + Theme Toggle */}
           <div className="flex items-center gap-2.5">
             <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono font-bold text-muted-foreground px-2.5 py-1 rounded-sm border-2 border-foreground bg-secondary">
-              <span>SVCE PLACEMENT INTELLIGENCE</span>
+              <span>RADIX TALENT MATCH</span>
             </div>
             {companySummary?.category && (
-              <Badge variant={companySummary.category.toLowerCase().replace(/\s+/g, "-") as any} className="text-[10px]">
+              <Badge
+                variant={companySummary.category.toLowerCase().replace(/\s+/g, "-") as any}
+                className="text-[10px]"
+              >
                 {companySummary.category}
               </Badge>
             )}

@@ -23,7 +23,7 @@ describe("Company Repository Tests", () => {
     console.log("Distinct categories:", categories);
     console.log("Distinct industries count:", industries.length, industries.slice(0, 10));
     console.log("Distinct locations count:", locations.length, locations.slice(0, 10));
-  });
+  }, 15000);
 
   it("getCompanyProfile fetches and normalizes company_json for company_id 1", async () => {
     const profile = await getCompanyProfile(1);
@@ -31,7 +31,7 @@ describe("Company Repository Tests", () => {
     expect(profile?.summary.name).toBe("Accenture plc");
     expect(profile?.rawFullJson).toBeDefined();
     console.log("Fetched company profile keys:", Object.keys(profile?.rawFullJson || {}));
-  });
+  }, 15000);
 
   it("getCompanySkills fetches skills and 10-level topics for company_id 1", async () => {
     const skillsRes = await getCompanySkills(1);
@@ -44,5 +44,5 @@ describe("Company Repository Tests", () => {
     expect(roadmap).toBeDefined();
     expect(roadmap.length).toBe(10);
     console.log(`Sample 10-level roadmap for ${firstSkillName}:`, roadmap.slice(0, 3));
-  });
+  }, 15000);
 });

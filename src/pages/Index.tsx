@@ -281,6 +281,30 @@ export const Index: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* RADIX Talent Match 5-Module Fast Navigation Bar */}
+            <div className="pt-2 space-y-2">
+              <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-muted-foreground">
+                <span className="text-[#4169E1]">⚡ RADIX TALENT MATCH MODULES:</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "01 JD Analytics", path: "/radix/jd-analytics" },
+                  { label: "02 Resume Parsing", path: "/radix/resume-parsing" },
+                  { label: "03 Profile Builder", path: "/radix/profile-builder" },
+                  { label: "04 Talent Check", path: "/company/skills" },
+                  { label: "05 Skill Matching", path: "/radix/skill-matching" },
+                ].map((mod, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => navigate(mod.path)}
+                    className="px-2.5 py-1 text-xs font-mono font-bold rounded-sm border-2 border-foreground bg-card text-foreground hover:bg-primary hover:text-primary-foreground nb-shadow-sm transition-all text-left select-none"
+                  >
+                    {mod.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Right Column: Editorial Research Index */}
