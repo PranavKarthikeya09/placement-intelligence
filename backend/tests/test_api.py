@@ -104,11 +104,16 @@ def test_profile_validation_failure():
     assert response.status_code == 422
 
 
-def test_scaffolding_endpoints_except_resume_parser():
-    """Verify deferred module endpoints remain HTTP 501 while Resume Parsing works."""
-    res_jd = client.post("/api/jd/analyze", json={"raw_text": "Sample JD text"})
-    assert res_jd.status_code == 501
-    assert "not yet implemented" in res_jd.json()["detail"]
+def test_implemented_jd_and_resume_endpoints_with_remaining_scaffolds():
+    """Verify implemented JD and Resume Parsing endpoints plus remaining scaffolds."""
+    res_jd = client.post(
+        "/api/jd/analyze",
+        json={
+            "raw_text": "Software Engineer\nBuild scalable backend services with Python and SQL."
+        },
+    )
+    assert res_jd.status_code == 200
+    assert res_jd.json()["role"]["job_title"] == "Software Engineer"
 
     res_resume = client.post("/api/resume/parse", json={"raw_text": "Sample Resume text"})
     assert res_resume.status_code == 200
