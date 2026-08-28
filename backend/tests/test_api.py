@@ -104,19 +104,17 @@ def test_profile_validation_failure():
     assert response.status_code == 422
 
 
-def test_scaffolding_endpoints():
-    """Verify deferred module endpoints return HTTP 501 Not Implemented"""
-    res_jd = client.post("/api/jd/analyze", json={"raw_text": "Sample JD text"})
-    assert res_jd.status_code == 501
-    assert "not yet implemented" in res_jd.json()["detail"]
+def test_jd_analyze_endpoint():
+    """Verify POST /api/jd/analyze is implemented and returns HTTP 200 with extracted role info"""
+    res_jd = client.post("/api/jd/analyze", json={"raw_text": "Software Engineer"})
+    assert res_jd.status_code == 200
+    assert res_jd.json()["role"]["job_title"] == "Software Engineer"
 
-    res_resume = client.post("/api/resume/parse", json={"raw_text": "Sample Resume text"})
-    assert res_resume.status_code == 501
-    assert "not yet implemented" in res_resume.json()["detail"]
 
-    res_talent = client.post("/api/talent-check", json={"candidate_id": "c1", "company_id": 1})
-    assert res_talent.status_code == 501
-    assert "not yet implemented" in res_talent.json()["detail"]
+def test_jd_rejects_malformed_input():
+    """Verify POST /api/jd/analyze rejects malformed input with HTTP 422"""
+    response = client.post("/api/jd/analyze", json={"raw_text": 12345})
+    assert response.status_code == 422
 
 
 def test_skill_match_endpoint():
@@ -130,3 +128,13 @@ def test_skill_match_endpoint():
     assert "matched_skills" in data
     assert "missing_skills" in data
 
+
+def test_scaffolding_endpoints():
+    """Verify genuinely deferred module endpoints return HTTP 501 Not Implemented"""
+    res_resume = client.post("/api/resume/parse", json={"raw_text": "Sample Resume text"})
+    assert res_resume.status_code == 501
+    assert "not yet implemented" in res_resume.json()["detail"]
+
+    res_talent = client.post("/api/talent-check", json={"candidate_id": "c1", "company_id": 1})
+    assert res_talent.status_code == 501
+    assert "not yet implemented" in res_talent.json()["detail"]

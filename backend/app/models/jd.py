@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from app.models.skill import Skill
 
 
@@ -49,6 +49,12 @@ class JDAnalyzeRequest(BaseModel):
     raw_text: Optional[str] = None
     source_url: Optional[str] = None
     file_name: Optional[str] = None
+
+    @model_validator(mode="after")
+    def raw_text_is_required(self) -> "JDAnalyzeRequest":
+        if self.raw_text is None or not self.raw_text.strip():
+            raise ValueError("raw_text is required and must not be blank")
+        return self
 
 
 class JDAnalysisResult(BaseModel):
