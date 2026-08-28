@@ -1,0 +1,194 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ─── Neo-Brutalist Token System (Light) ─── */
+    --background: 38 48% 93%;       /* #F6EFE3 warm parchment */
+    --foreground: 0 0% 9%;          /* #171717 deep ink black */
+    --card: 43 100% 99%;            /* #FFFDF8 soft ivory */
+    --card-foreground: 0 0% 9%;
+    --popover: 43 100% 99%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 81 88% 62%;          /* #B7F34A electric lime */
+    --primary-foreground: 0 0% 9%;  /* #171717 deep ink black for high contrast */
+    --secondary: 37 38% 85%;        /* #E8DDCB warm sand */
+    --secondary-foreground: 0 0% 9%;
+    --muted: 37 38% 85%;            /* #E8DDCB warm sand */
+    --muted-foreground: 30 10% 40%; /* #6E685E warm muted text */
+    --accent: 37 38% 85%;           /* #E8DDCB warm sand */
+    --accent-foreground: 0 0% 9%;
+    --destructive: 11 100% 67%;     /* #FF7657 warm coral */
+    --destructive-foreground: 0 0% 9%;
+    --border: 0 0% 9%;              /* #171717 deep ink black */
+    --input: 0 0% 9%;
+    --ring: 81 88% 62%;             /* electric lime */
+    --radius: 4px;
+
+    /* Semantic color tokens */
+    --navy: 0 0% 9%;
+    --navy-light: 30 10% 40%;
+
+    --cobalt: 225 73% 57%;          /* #4169E1 cobalt blue */
+    --coral: 11 100% 67%;           /* #FF7657 warm coral */
+    --lime: 81 88% 62%;             /* #B7F34A electric lime */
+    --sand: 37 38% 85%;             /* #E8DDCB warm sand */
+
+    --super-dream: 81 88% 62%;      /* #B7F34A electric lime */
+    --dream: 225 73% 57%;           /* #4169E1 cobalt blue */
+    --standard: 37 38% 85%;         /* #E8DDCB warm sand */
+    --regular: 43 100% 99%;         /* #FFFDF8 soft ivory */
+
+    --expert: 11 100% 67%;          /* warm coral */
+    --advanced: 225 73% 57%;        /* cobalt blue */
+    --pro: 81 88% 62%;              /* electric lime */
+    --beginner: 37 38% 85%;         /* warm sand */
+
+    --sidebar-background: 43 100% 99%; /* #FFFDF8 soft ivory */
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-accent: 37 38% 85%;
+
+    /* Brutalist design tokens */
+    --nb-shadow-color: 0 0% 9%;      /* #171717 deep ink black */
+    --nb-border-width: 2px;
+    --nb-border-width-lg: 3px;
+  }
+
+  .dark {
+    /* ─── Neo-Brutalist Token System (Dark Mode) ─── */
+    --background: 0 0% 9%;          /* #171717 deep ink black */
+    --foreground: 43 100% 99%;      /* #FFFDF8 soft ivory */
+    --card: 0 0% 14%;               /* #242424 dark ivory surface */
+    --card-foreground: 43 100% 99%;
+    --popover: 0 0% 14%;
+    --popover-foreground: 43 100% 99%;
+    --primary: 81 88% 62%;          /* #B7F34A electric lime */
+    --primary-foreground: 0 0% 9%;  /* #171717 deep ink black */
+    --secondary: 0 0% 18%;          /* #2E2E2E */
+    --secondary-foreground: 43 100% 99%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 37 20% 70%;
+    --accent: 0 0% 18%;
+    --accent-foreground: 43 100% 99%;
+    --destructive: 11 100% 67%;     /* #FF7657 warm coral */
+    --destructive-foreground: 0 0% 9%;
+    --border: 43 100% 99%;          /* #FFFDF8 light border on dark */
+    --input: 43 100% 99%;
+    --ring: 81 88% 62%;
+
+    --navy: 43 100% 99%;
+    --navy-light: 37 20% 70%;
+
+    --cobalt: 225 73% 57%;
+    --coral: 11 100% 67%;
+    --lime: 81 88% 62%;
+    --sand: 0 0% 18%;
+
+    --super-dream: 81 88% 62%;
+    --dream: 225 73% 57%;
+    --standard: 0 0% 22%;
+    --regular: 0 0% 14%;
+
+    --expert: 11 100% 67%;
+    --advanced: 225 73% 57%;
+    --pro: 81 88% 62%;
+    --beginner: 0 0% 22%;
+
+    --sidebar-background: 0 0% 14%;
+    --sidebar-foreground: 43 100% 99%;
+    --sidebar-accent: 0 0% 18%;
+
+    --nb-shadow-color: 0 0% 0%;
+    --nb-border-width: 2px;
+    --nb-border-width-lg: 3px;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+@layer utilities {
+  /* ─── Neo-Brutalist Shadow System ─── */
+  .nb-shadow-sm {
+    box-shadow: 3px 3px 0 hsl(var(--nb-shadow-color));
+  }
+  .nb-shadow-md {
+    box-shadow: 5px 5px 0 hsl(var(--nb-shadow-color));
+  }
+  .nb-shadow-lg {
+    box-shadow: 8px 8px 0 hsl(var(--nb-shadow-color));
+  }
+
+  /* Hover: element shifts toward its shadow */
+  .nb-hover-shift {
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+  .nb-hover-shift:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 hsl(var(--nb-shadow-color));
+  }
+
+  /* Active: element compresses into shadow */
+  .nb-hover-shift:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 hsl(var(--nb-shadow-color));
+  }
+
+  /* Card-specific hover */
+  .nb-card-hover {
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .nb-card-hover:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 3px 3px 0 hsl(var(--nb-shadow-color));
+  }
+  .nb-card-hover:active {
+    transform: translate(3px, 3px);
+    box-shadow: 2px 2px 0 hsl(var(--nb-shadow-color));
+  }
+
+  /* Thick border helpers */
+  .nb-border {
+    border-width: var(--nb-border-width);
+    border-style: solid;
+  }
+  .nb-border-lg {
+    border-width: var(--nb-border-width-lg);
+    border-style: solid;
+  }
+}
+
+/* ─── Scrollbar (brutalist) ─── */
+html {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--foreground));
+  border: 1px solid hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
