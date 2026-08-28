@@ -104,15 +104,15 @@ def test_profile_validation_failure():
     assert response.status_code == 422
 
 
-def test_scaffolding_endpoints():
-    """Verify all deferred module endpoints return HTTP 501 Not Implemented"""
+def test_scaffolding_endpoints_except_resume_parser():
+    """Verify deferred module endpoints remain HTTP 501 while Resume Parsing works."""
     res_jd = client.post("/api/jd/analyze", json={"raw_text": "Sample JD text"})
     assert res_jd.status_code == 501
     assert "not yet implemented" in res_jd.json()["detail"]
 
     res_resume = client.post("/api/resume/parse", json={"raw_text": "Sample Resume text"})
-    assert res_resume.status_code == 501
-    assert "not yet implemented" in res_resume.json()["detail"]
+    assert res_resume.status_code == 200
+    assert res_resume.json()["candidate"]["full_name"] == "Sample Resume text"
 
     res_talent = client.post("/api/talent-check", json={"candidate_id": "c1", "company_id": 1})
     assert res_talent.status_code == 501
